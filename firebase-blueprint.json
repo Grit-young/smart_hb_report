@@ -1,0 +1,33 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with approval status",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "admin"],
+          "description": "Approval status of the user"
+        },
+        "createdAt": {
+          "type": "object",
+          "description": "Timestamp when the user account was created in Firestore"
+        }
+      },
+      "required": ["email", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "User"
+      },
+      "description": "Stores user profiles and approval status used for access control."
+    }
+  }
+}

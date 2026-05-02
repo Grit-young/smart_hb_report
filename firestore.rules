@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { 
+      allow read, write: if false; 
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function existing() { return resource.data; }
+    function incoming() { return request.resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    function isRootAdmin() {
+      return isSignedIn() && request.auth.token.email_verified == true && request.auth.token.email == 'ysjnhy@gmail.com';
+    }
+
+    function isAdminRole() {
+      return isRootAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'admin');
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'status', 'createdAt']) && data.keys().size() == 3
+          && data.email is string && data.email.size() <= 255
+          && (data.status == 'pending' || data.status == 'approved' || data.status == 'admin')
+          && data.createdAt == request.time;
+    }
+
+    function isValidUserUpdate(data) {
+       return data.email is string && data.email.size() <= 255
+           && (data.status == 'pending' || data.status == 'approved' || data.status == 'admin');
+    }
+
+    match /users/{userId} {
+      allow list: if isSignedIn() && request.auth.token.email_verified == true && isAdminRole();
+      allow get: if isSignedIn() && request.auth.token.email_verified == true && (request.auth.uid == userId || isAdminRole());
+      
+      allow create: if isSignedIn() && request.auth.token.email_verified == true && 
+                    isValidId(userId) && request.auth.uid == userId &&
+                    isValidUser(incoming()) && 
+                    (incoming().status == 'pending' || (incoming().status == 'admin' && isRootAdmin())) &&
+                    incoming().email == request.auth.token.email;
+
+      allow update: if isSignedIn() && request.auth.token.email_verified == true &&
+                    isValidId(userId) && isValidUserUpdate(incoming()) &&
+                    isAdminRole() &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+    }
+  }
+}

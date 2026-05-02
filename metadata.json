@@ -1,0 +1,6 @@
+{
+  "name": "스마트 학부모 피드백 리포트",
+  "description": "학생 단원평가 시험지와 분석표를 바탕으로 학부모 카카오톡 피드백을 AI로 자동 생성하는 서비스입니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
