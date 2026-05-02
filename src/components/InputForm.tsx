@@ -44,6 +44,10 @@ export function InputForm({ onAnalyze, onSampleData, isLoading }: InputFormProps
         setIsExtracting(true);
         const processedFiles = await Promise.all(newFiles.map(f => fileToBase64(f.file)));
         const extracted = await extractStudentInfo(processedFiles);
+        console.log("Extracted:", extracted);
+        if (Object.keys(extracted).length === 0) {
+          alert('정보 추출에 실패했거나 값이 없습니다.');
+        }
         
         setInfo(prev => ({
           ...prev,
@@ -52,8 +56,9 @@ export function InputForm({ onAnalyze, onSampleData, isLoading }: InputFormProps
           test_date: extracted.test_date || prev.test_date,
           unit_name: extracted.unit_name || prev.unit_name,
         }));
-      } catch (err) {
+      } catch (err: any) {
         console.error("Extraction error:", err);
+        alert(`학생 정보 추출 실패: ${err.message || '알 수 없는 오류'}`);
       } finally {
         setIsExtracting(false);
       }

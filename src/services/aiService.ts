@@ -20,10 +20,13 @@ export const extractStudentInfo = async (
     files: { data: string; mimeType: string }[]
 ): Promise<Partial<StudentInfo>> => {
     const ai = getAi();
-    const prompt = `업로드된 시험지나 분석표 문서(이미지/PDF)에서 학생의 기본 정보를 추출해 주세요.
+    const prompt = `업로드된 수학 학원 학생의 시험지, 평가지, 또는 리포트 사진(이미지/PDF)에서 학생의 기본 정보를 추출해 주세요.
+매우 흐릿하게 적힌 손글씨나 상단 구석의 이름도 꼭 찾아내 주세요.
 찾을 수 없는 정보나 불확실한 정보는 빈 문자열("")로 반환하세요.
-- 학년은 명확할 경우 반드시 "초1", "초2", "초3", "초4", "초5", "초6", "중1", "중2", "중3" 중의 형식으로 변환해서 적어주세요.
-- 날짜는 "YYYY-MM-DD" 형태로 나타내주세요.`;
+- 학생 이름: "이름:" 옆이 아니더라도 상단에 적힌 세 글자 이름 등을 추출해주세요.
+- 학년은 명확할 경우 반드시 "초1", "초2", "초3", "초4", "초5", "초6", "중1", "중2", "중3" 중의 형식으로 변환해서 적어주세요 (예: 초등학교 4학년 -> 초4).
+- 날짜는 "YYYY-MM-DD" 형태로 나타내주세요.
+- 단원명: "단원", "범위", "주제" 등으로 표기된 내용을 적어주세요.`;
 
     const parts: any[] = [{ text: prompt }];
 
@@ -56,10 +59,11 @@ export const extractStudentInfo = async (
 
         const text = response.text;
         if (!text) return {};
+        console.log("Raw LLM text:", text);
         return JSON.parse(text);
     } catch (e) {
         console.error("Extraction error:", e);
-        return {}; // 실패 시 빈 객체 반환 (앱 중단 방지)
+        throw e;
     }
 };
 
