@@ -80,28 +80,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error:', err);
-      if (err instanceof Error) {
-        alert(`로그인 오류: ${err.message}`);
-      } else {
-        alert('로그인 중 알 수 없는 오류가 발생했습니다.');
+      let errorMessage = err.message;
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        errorMessage = '이메일 또는 비밀번호가 올바르지 않습니다.';
+      } else if (err.code === 'auth/too-many-requests') {
+        errorMessage = '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.';
       }
-      throw err; // Re-throw to handle in UI
+      alert(`로그인 오류: ${errorMessage}`);
+      throw err;
     }
   };
   
   const signup = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Signup error:', err);
-      if (err instanceof Error) {
-        alert(`회원가입 오류: ${err.message}`);
-      } else {
-        alert('회원가입 중 알 수 없는 오류가 발생했습니다.');
+      let errorMessage = err.message;
+      if (err.code === 'auth/email-already-in-use') {
+        errorMessage = '이미 가입된 이메일입니다. 로그인해주세요.';
+      } else if (err.code === 'auth/weak-password') {
+        errorMessage = '비밀번호는 6자리 이상이어야 합니다.';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = '유효하지 않은 이메일 형식입니다.';
       }
-      throw err; // Re-throw to handle in UI
+      alert(`회원가입 오류: ${errorMessage}`);
+      throw err;
     }
   };
 
