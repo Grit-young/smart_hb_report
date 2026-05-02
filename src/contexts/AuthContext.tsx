@@ -82,6 +82,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await signInWithPopup(auth, provider);
     } catch (err) {
       console.error('Login error:', err);
+      if (err instanceof Error) {
+        alert(`로그인 오류: ${err.message}`);
+      } else {
+        alert('로그인 중 알 수 없는 오류가 발생했습니다.');
+      }
     }
   };
 
