@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -9,7 +9,8 @@ interface AuthContextType {
   user: User | null;
   status: ApprovalStatus;
   loading: boolean;
-  login: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   status: null,
   loading: true,
   login: async () => {},
+  signup: async () => {},
   logout: async () => {}
 });
 
@@ -50,7 +52,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (err) {
       console.error("Error fetching user status:", err);
-      // Wait, there could be a permission denied error here briefly, handle correctly
       if (err instanceof Error) {
         console.error("Firestore Error:", JSON.stringify({
           error: err.message,
@@ -76,10 +77,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const login = async () => {
+  const login = async (email: string, password: string) => {
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
       console.error('Login error:', err);
       if (err instanceof Error) {
@@ -87,15 +87,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         alert('로그인 중 알 수 없는 오류가 발생했습니다.');
       }
+      throw err; // Re-throw to handle in UI
+    }
+  };
+  
+  const signup = async (email: string, password: string) => {
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      console.error('Signup error:', err);
+      if (err instanceof Error) {
+        alert(`회원가입 오류: ${err.message}`);
+      } else {
+        alert('회원가입 중 알 수 없는 오류가 발생했습니다.');
+      }
+      throw err; // Re-throw to handle in UI
     }
   };
 
   const logout = async () => {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, status, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, status, loading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
