@@ -9,6 +9,7 @@ import { SAMPLE_DATA } from './constants/sampleData';
 import { useAuth } from './contexts/AuthContext';
 import { LoginView, PendingView } from './components/AuthViews';
 import { AdminPanel } from './components/AdminPanel';
+import { saveReportToDB, fetchReportsFromDB, deleteReportFromDB } from './services/dbService';
 
 type ViewMode = 'input' | 'result' | 'history' | 'admin';
 
@@ -20,29 +21,51 @@ export default function App() {
   const { user, status, loading } = useAuth();
 
   useEffect(() => {
-    const saved = localStorage.getItem('smartFeedbackHistory');
-    if (saved) {
-      try {
-        setHistory(JSON.parse(saved));
-      } catch (e) {
-        console.error("Storage parse error", e);
-      }
+    if (user && status === 'approved') {
+      loadHistory();
     }
-  }, []);
+  }, [user, status]);
 
-  const saveToHistory = (data: ReportData) => {
-    const newData = { ...data, created_at: new Date().toLocaleDateString() };
-    const newHistory = [newData, ...history.filter(h => h.id !== data.id)].slice(0, 50); // Keep last 50
-    setHistory(newHistory);
-    localStorage.setItem('smartFeedbackHistory', JSON.stringify(newHistory));
-    alert("기록에 저장되었습니다.");
+  const loadHistory = async () => {
+    try {
+      const reports = await fetchReportsFromDB();
+      setHistory(reports);
+    } catch (e) {
+      console.error("Failed to fetch history:", e);
+    }
+  };
+
+  const saveToHistory = async (data: ReportData) => {
+    try {
+      const isAlreadyInHistory = history.some(h => h.id === data.id);
+      if (!isAlreadyInHistory) {
+        await saveReportToDB(data);
+        alert("기록에 저장되었습니다.");
+        loadHistory(); // Refresh history
+      } else {
+        alert("이미 저장된 결과입니다.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("저장 중 오류가 발생했습니다.\n" + (e as Error).message);
+    }
+  };
+  
+  const handleDeleteFromHistory = async (id: string) => {
+    try {
+      await deleteReportFromDB(id);
+      loadHistory();
+    } catch (e) {
+      console.error(e);
+      alert("삭제 중 오류가 발생했습니다.");
+    }
   };
 
   const handleAnalyze = async (info: StudentInfo, files: { data: string; mimeType: string; name: string }[]) => {
     setIsLoading(true);
     try {
       const result = await generateFeedbackReport(info, files);
-      setCurrentData({ ...result, id: Math.random().toString(36).substring(2, 9) });
+      setCurrentData({ ...result, id: Math.random().toString(36).substring(2, 11) });
       setView('result');
     } catch (e) {
       console.error(e);
@@ -53,7 +76,7 @@ export default function App() {
   };
 
   const handleSampleData = () => {
-    setCurrentData({ ...SAMPLE_DATA, id: Math.random().toString(36).substring(2, 9) });
+    setCurrentData({ ...SAMPLE_DATA, id: Math.random().toString(36).substring(2, 11) });
     setView('result');
   };
 
@@ -100,7 +123,8 @@ export default function App() {
             onSelect={(data) => {
               setCurrentData(data);
               setView('result');
-            }} 
+            }}
+            onDelete={handleDeleteFromHistory}
           />
         )}
       </main>

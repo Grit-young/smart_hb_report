@@ -11,7 +11,7 @@ service cloud.firestore {
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
 
     function isRootAdmin() {
-      return isSignedIn() && request.auth.token.email_verified == true && request.auth.token.email == 'ysjnhy@gmail.com';
+      return isSignedIn() && request.auth.token.email == 'ysjnhy@gmail.com';
     }
 
     function isAdminRole() {
@@ -29,22 +29,53 @@ service cloud.firestore {
        return data.email is string && data.email.size() <= 255
            && (data.status == 'pending' || data.status == 'approved' || data.status == 'admin');
     }
+    
+    function isValidReport(data) {
+        return data.keys().hasAll(['userId', 'student_name', 'grade', 'gender', 'test_date', 'unit_name', 'score', 'achievement_level', 'strengths', 'weak_points', 'error_causes', 'next_unit_connection', 'academy_plan', 'home_support_points', 'kakao_short', 'kakao_standard', 'kakao_detailed', 'createdAt', 'id']) && data.keys().size() == 19
+            && data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid
+            && data.student_name is string && data.student_name.size() <= 100
+            && data.grade is string && data.grade.size() <= 50
+            && data.gender is string && data.gender.size() <= 20
+            && data.test_date is string && data.test_date.size() <= 50
+            && data.unit_name is string && data.unit_name.size() <= 200
+            && data.score is number
+            && data.achievement_level is string && data.achievement_level.size() <= 50
+            && data.strengths is list && data.strengths.size() <= 30 && (data.strengths.size() == 0 || data.strengths[0] is string)
+            && data.weak_points is list && data.weak_points.size() <= 30 && (data.weak_points.size() == 0 || data.weak_points[0] is string)
+            && data.error_causes is list && data.error_causes.size() <= 30 && (data.error_causes.size() == 0 || data.error_causes[0] is string)
+            && data.next_unit_connection is list && data.next_unit_connection.size() <= 30 && (data.next_unit_connection.size() == 0 || data.next_unit_connection[0] is string)
+            && data.academy_plan is list && data.academy_plan.size() <= 30 && (data.academy_plan.size() == 0 || data.academy_plan[0] is string)
+            && data.home_support_points is list && data.home_support_points.size() <= 30 && (data.home_support_points.size() == 0 || data.home_support_points[0] is string)
+            && data.kakao_short is string && data.kakao_short.size() <= 10000
+            && data.kakao_standard is string && data.kakao_standard.size() <= 10000
+            && data.kakao_detailed is string && data.kakao_detailed.size() <= 20000
+            && data.createdAt is timestamp
+            && data.id is string && data.id.size() <= 128;
+    }
 
     match /users/{userId} {
-      allow list: if isSignedIn() && request.auth.token.email_verified == true && isAdminRole();
-      allow get: if isSignedIn() && request.auth.token.email_verified == true && (request.auth.uid == userId || isAdminRole());
+      allow list: if isSignedIn() && isAdminRole();
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdminRole());
       
-      allow create: if isSignedIn() && request.auth.token.email_verified == true && 
+      allow create: if isSignedIn() && 
                     isValidId(userId) && request.auth.uid == userId &&
                     isValidUser(incoming()) && 
                     (incoming().status == 'pending' || (incoming().status == 'admin' && isRootAdmin())) &&
                     incoming().email == request.auth.token.email;
 
-      allow update: if isSignedIn() && request.auth.token.email_verified == true &&
+      allow update: if isSignedIn() && 
                     isValidId(userId) && isValidUserUpdate(incoming()) &&
                     isAdminRole() &&
                     incoming().createdAt == existing().createdAt &&
                     incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+    }
+
+    match /reports/{reportId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdminRole());
+      allow create: if isSignedIn() && isValidId(reportId) && isValidReport(incoming());
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if false;
     }
   }
 }

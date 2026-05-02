@@ -20,6 +20,43 @@
         }
       },
       "required": ["email", "status", "createdAt"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "A generated feedback report for a student",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who generated the report"
+        },
+        "student_name": { "type": "string" },
+        "grade": { "type": "string" },
+        "gender": { "type": "string" },
+        "test_date": { "type": "string" },
+        "unit_name": { "type": "string" },
+        "score": { "type": "number" },
+        "achievement_level": { "type": "string" },
+        "strengths": { "type": "array", "items": { "type": "string" } },
+        "weak_points": { "type": "array", "items": { "type": "string" } },
+        "error_causes": { "type": "array", "items": { "type": "string" } },
+        "next_unit_connection": { "type": "array", "items": { "type": "string" } },
+        "academy_plan": { "type": "array", "items": { "type": "string" } },
+        "home_support_points": { "type": "array", "items": { "type": "string" } },
+        "kakao_short": { "type": "string" },
+        "kakao_standard": { "type": "string" },
+        "kakao_detailed": { "type": "string" },
+        "createdAt": {
+          "type": "object",
+          "description": "Server timestamp of when the report was created"
+        }
+      },
+      "required": [
+        "userId", "student_name", "grade", "gender", "test_date", "unit_name",
+        "score", "achievement_level", "strengths", "weak_points", "error_causes",
+        "next_unit_connection", "academy_plan", "home_support_points", 
+        "kakao_short", "kakao_standard", "kakao_detailed", "createdAt"
+      ]
     }
   },
   "firestore": {
@@ -28,6 +65,12 @@
         "$ref": "User"
       },
       "description": "Stores user profiles and approval status used for access control."
+    },
+    "/reports/{reportId}": {
+      "schema": {
+        "$ref": "Report"
+      },
+      "description": "Stores all generated feedback reports, indexed by userId."
     }
   }
 }
