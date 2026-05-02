@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { User, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -11,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   login: async () => {},
   signup: async () => {},
+  resetPassword: async () => {},
   logout: async () => {}
 });
 
@@ -111,6 +113,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert('비밀번호 재설정 이메일이 발송되었습니다. 메일함을 확인해주세요.');
+    } catch (err: any) {
+      console.error('Password reset error:', err);
+      let errorMessage = err.message;
+      if (err.code === 'auth/user-not-found') {
+        errorMessage = '가입되지 않은 이메일입니다.';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = '유효하지 않은 이메일 형식입니다.';
+      }
+      alert(`비밀번호 재설정 오류: ${errorMessage}`);
+      throw err;
+    }
+  };
+
   const logout = async () => {
     try {
       await signOut(auth);
@@ -120,7 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, status, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, status, loading, login, signup, resetPassword, logout }}>
       {children}
     </AuthContext.Provider>
   );
