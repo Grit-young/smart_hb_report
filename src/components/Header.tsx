@@ -28,7 +28,7 @@ export function Header({ view, setView, isAdmin }: HeaderProps) {
             </div>
           )}
           <div>
-            <h1 className="text-lg font-bold text-sky-600 leading-tight">스마트 학부모 피드백 리포트</h1>
+            <h1 className="text-lg font-bold text-sky-600 leading-tight">스마트 학부모 피드백 리포트xxx</h1>
             <p className="text-xs text-gray-400 font-medium hidden sm:block">AI 기반 개인별 맞춤 학습 분석 서비스</p>
           </div>
         </div>
